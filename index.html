@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master Flowchart CS — Laundry Club × QRocketLab</title>
+<meta name="description" content="Peta alur lengkap Customer Service Laundry Club — 11 flow operasional dengan analisis otomasi Tier 1, 2, 3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════
+   DESIGN SYSTEM
+   ══════════════════════════════════════════ */
+:root {
+  --bg-deep: #070e1f;
+  --bg-surface: #0d1b3e;
+  --bg-card: #111d3a;
+  --accent-orange: #f5934a;
+  --accent-orange-glow: rgba(245,147,74,0.25);
+  --accent-blue: #4da6ff;
+  --accent-cyan: #22d3ee;
+  --accent-green: #34d399;
+  --accent-red: #f87171;
+  --accent-purple: #a78bfa;
+  --text-primary: #f0f4fc;
+  --text-secondary: #8b9dc3;
+  --text-muted: #5a6d8f;
+  --border: rgba(139,157,195,0.15);
+  --radius: 12px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  height: 100vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ─── HEADER ─── */
+.top-bar {
+  background: linear-gradient(135deg, var(--bg-surface) 0%, #0f2247 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 32px 14px;
+  position: relative; flex-shrink: 0;
+}
+.top-bar::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent-orange), #ff6b6b, var(--accent-orange));
+  background-size: 200% 100%;
+  animation: shimmer 4s ease-in-out infinite;
+}
+@keyframes shimmer { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+
+.header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.header-left h1 {
+  font-size: 18px; font-weight: 700; letter-spacing: -0.3px;
+}
+.header-left h1 span { color: var(--accent-orange); }
+.header-left p {
+  margin-top: 4px; font-size: 11.5px; color: var(--text-secondary);
+  max-width: 650px; line-height: 1.5;
+}
+.badge-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 5px; font-size: 10px; font-weight: 600;
+  background: rgba(245,147,74,0.1); border: 1px solid rgba(245,147,74,0.25);
+  color: var(--accent-orange);
+}
+.badge.blue { background: rgba(77,166,255,0.1); border-color: rgba(77,166,255,0.25); color: var(--accent-blue); }
+.badge.green { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.25); color: var(--accent-green); }
+.badge.cyan { background: rgba(34,211,238,0.1); border-color: rgba(34,211,238,0.25); color: var(--accent-cyan); }
+
+/* ─── CONTROLS BAR ─── */
+.controls-bar {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+  flex-shrink: 0;
+}
+
+/* View toggle pills */
+.view-toggle {
+  display: flex; background: var(--bg-deep); border-radius: 10px;
+  padding: 3px; border: 1px solid var(--border);
+}
+.view-btn {
+  padding: 7px 14px; border-radius: 8px; border: none;
+  font-family: inherit; font-size: 11.5px; font-weight: 600;
+  cursor: pointer; transition: all 0.25s ease;
+  background: transparent; color: var(--text-muted);
+  white-space: nowrap;
+}
+.view-btn:hover { color: var(--text-secondary); }
+.view-btn.active {
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.view-btn[data-view="master"].active { background: linear-gradient(135deg, #4b5563, #374151); }
+.view-btn[data-view="tier1"].active { background: linear-gradient(135deg, #16a34a, #15803d); }
+.view-btn[data-view="tier2"].active { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+.view-btn[data-view="tier3"].active { background: linear-gradient(135deg, #9333ea, #7e22ce); }
+
+.view-btn .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  display: inline-block; margin-right: 5px;
+}
+
+/* Right controls */
+.right-controls {
+  display: flex; align-items: center; gap: 8px;
+}
+.zoom-controls {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--bg-deep); border-radius: 8px;
+  padding: 3px; border: 1px solid var(--border);
+}
+.zoom-btn {
+  width: 30px; height: 30px; border-radius: 6px; border: none;
+  background: transparent; color: var(--text-secondary);
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  font-family: inherit; font-weight: 700;
+  transition: all 0.15s;
+}
+.zoom-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+.zoom-btn:active { transform: scale(0.92); }
+.zoom-label {
+  font-size: 11px; color: var(--text-muted); font-weight: 600;
+  min-width: 42px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── LEGEND BAR ─── */
+.legend-bar {
+  background: rgba(13,27,62,0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 32px;
+  display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+  flex-shrink: 0;
+  min-height: 36px;
+}
+.legend-item {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; color: var(--text-secondary); font-weight: 500;
+}
+.legend-swatch {
+  width: 12px; height: 12px; border-radius: 3px; display: inline-block;
+  flex-shrink: 0;
+}
+.legend-swatch.dashed {
+  background-image: repeating-linear-gradient(
+    45deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px
+  );
+}
+.tier-info-pill {
+  margin-left: auto;
+  padding: 3px 10px; border-radius: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.3px;
+  background: rgba(245,147,74,0.12); border: 1px solid rgba(245,147,74,0.3);
+  color: var(--accent-orange);
+}
+.tier-info-pill.t2 { background: rgba(37,99,235,0.12); border-color: rgba(37,99,235,0.3); color: #60a5fa; }
+.tier-info-pill.t3 { background: rgba(147,51,234,0.12); border-color: rgba(147,51,234,0.3); color: #c084fc; }
+
+/* ─── MAIN CANVAS ─── */
+.canvas-container {
+  flex: 1; overflow: hidden; position: relative;
+  background: #ffffff;
+  cursor: grab;
+}
+.canvas-container:active { cursor: grabbing; }
+.canvas-inner {
+  position: absolute;
+  transform-origin: 0 0;
+  /* large padding so user can pan freely */
+  padding: 60px;
+  min-width: 100%;
+  min-height: 100%;
+}
+.mermaid {
+  /* don't constrain width — let mermaid render at full size */
+}
+.mermaid svg {
+  max-width: none !important;
+  height: auto !important;
+}
+
+/* Hidden diagrams */
+.diagram-panel { display: none; }
+.diagram-panel.active { display: block; }
+
+/* ─── MINIMAP HINT ─── */
+.pan-hint {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+  color: #ccc; font-size: 11px; padding: 6px 16px;
+  border-radius: 20px; pointer-events: none;
+  opacity: 1; transition: opacity 0.6s;
+  z-index: 10;
+}
+.pan-hint.hidden { opacity: 0; }
+
+/* ─── FOOTER ─── */
+footer {
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 32px;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 6px;
+  font-size: 10px; color: var(--text-muted);
+  flex-shrink: 0;
+}
+footer .brand { color: var(--accent-orange); font-weight: 600; }
+
+/* ─── PRINT ─── */
+@media print {
+  body { height: auto; overflow: visible; background: #fff; }
+  .top-bar, .controls-bar, .legend-bar, footer { background: #fff; color: #333; border-color: #ddd; }
+  .top-bar::after { display: none; }
+  .header-left h1, .header-left h1 span { color: #111; }
+  .canvas-container { overflow: visible; height: auto; cursor: default; }
+  .canvas-inner { position: static; transform: none !important; padding: 20px; }
+  .pan-hint { display: none; }
+  .zoom-controls { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════ HEADER ════════════ -->
+<div class="top-bar">
+  <div class="header-row">
+    <div class="header-left">
+      <h1>Master Flowchart — <span>Alur Kerja CS Laundry Club</span></h1>
+      <p>11 flow operasional CS dalam satu peta alur interaktif. Geser (drag) untuk navigasi, scroll untuk zoom. Gunakan toggle untuk melihat analisis otomasi per tier.</p>
+      <div class="badge-row">
+        <span class="badge">11 Flow</span>
+        <span class="badge blue">3 Tier Roadmap</span>
+        <span class="badge green">Rp 80rb–1.7jt/bln</span>
+        <span class="badge cyan">Lampiran Engagement Letter · Juli 2026</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ CONTROLS ════════════ -->
+<div class="controls-bar">
+  <div class="view-toggle" id="viewToggle">
+    <button class="view-btn active" data-view="master" onclick="switchView('master')">
+      <span class="dot" style="background:#9ca3af;"></span>Master
+    </button>
+    <button class="view-btn" data-view="tier1" onclick="switchView('tier1')">
+      <span class="dot" style="background:#22c55e;"></span>Tier 1 — FAQ
+    </button>
+    <button class="view-btn" data-view="tier2" onclick="switchView('tier2')">
+      <span class="dot" style="background:#3b82f6;"></span>Tier 2 — Interactive
+    </button>
+    <button class="view-btn" data-view="tier3" onclick="switchView('tier3')">
+      <span class="dot" style="background:#a855f7;"></span>Tier 3 — Full
+    </button>
+  </div>
+  <div class="right-controls">
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="zoomDelta(-0.15)" title="Zoom Out">−</button>
+      <span class="zoom-label" id="zoomLabel">100%</span>
+      <button class="zoom-btn" onclick="zoomDelta(+0.15)" title="Zoom In">+</button>
+      <button class="zoom-btn" onclick="fitToScreen()" title="Fit" style="font-size:12px;">⊡</button>
+      <button class="zoom-btn" onclick="resetView()" title="Reset" style="font-size:13px;">↻</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ LEGENDS (one per view) ════════════ -->
+<div class="legend-bar" id="legend-master">
+  <span class="legend-item"><span class="legend-swatch" style="background:#fee2e2;border:1px solid #f87171;"></span> Titik masuk</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#dbeafe;border:1px solid #93c5fd;"></span> Proses / aksi</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#fef3c7;border:1px solid #fbbf24;"></span> Keputusan</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#dcfce7;border:1px solid #4ade80;"></span> Titik akhir</span>
+</div>
+
+<div class="legend-bar" id="legend-tier1" style="display:none;">
+  <span class="legend-item"><span class="legend-swatch" style="background:#d1fae5;border:1px solid #16a34a;"></span> 🤖 Otomasi penuh</span>
+  <span class="legend-item"><span class="legend-swatch dashed" style="background:#fef9c3;border:1px solid #ca8a04;"></span> 🔶 Sebagian otomatis</span>
+  <span class="legend-item"><span class="legend-swatch dashed" style="background:#ede9fe;border:1px solid #7c3aed;"></span> 🟣 Intake bot → handoff</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#fee2e2;border:1px solid #dc2626;"></span> 👤 Tetap manual</span>
+  <span class="tier-info-pill">TIER 1 · FAQ & Info · Rp 80rb–260rb/bln</span>
+</div>
+
+<div class="legend-bar" id="legend-tier2" style="display:none;">
+  <span class="legend-item"><span class="legend-swatch" style="background:#d1fae5;border:1px solid #16a34a;"></span> 🤖 Otomasi penuh</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#dbeafe;border:1px solid #2563eb;"></span> 🔵 +Tier 2 baru otomatis</span>
+  <span class="legend-item"><span class="legend-swatch dashed" style="background:#fef9c3;border:1px solid #ca8a04;"></span> 🔶 Sebagian otomatis</span>
+  <span class="legend-item"><span class="legend-swatch dashed" style="background:#ede9fe;border:1px solid #7c3aed;"></span> 🟣 Intake bot → handoff</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#fee2e2;border:1px solid #dc2626;"></span> 👤 Tetap manual</span>
+  <span class="tier-info-pill t2">TIER 2 · Interactive · Rp 350rb–750rb/bln · Butuh API Status Cucian</span>
+</div>
+
+<div class="legend-bar" id="legend-tier3" style="display:none;">
+  <span class="legend-item"><span class="legend-swatch" style="background:#d1fae5;border:1px solid #16a34a;"></span> 🤖 Otomasi penuh</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#f3e8ff;border:1px solid #9333ea;"></span> 🟣 +Tier 3 baru otomatis</span>
+  <span class="legend-item"><span class="legend-swatch dashed" style="background:#fef9c3;border:1px solid #ca8a04;"></span> 🔶 Sebagian otomatis</span>
+  <span class="legend-item"><span class="legend-swatch" style="background:#fee2e2;border:1px solid #dc2626;"></span> 👤 Tetap manual</span>
+  <span class="tier-info-pill t3">TIER 3 · Lead Qual + Booking · Rp 720rb–1.7jt/bln · Butuh Lalamove API Partner</span>
+</div>
+
+<!-- ════════════ INTERACTIVE CANVAS ════════════ -->
+<div class="canvas-container" id="canvasContainer">
+  <div class="canvas-inner" id="canvasInner">
+
+    <!-- ──── PANEL: MASTER ──── -->
+    <div class="diagram-panel active" id="panel-master">
+      <div class="mermaid" id="diagram-master">
+flowchart TD
+  START(["☎️ Customer chat masuk"]):::startNode --> Q1{"Apa kebutuhan customer?"}:::decision
+
+  Q1 -->|"Order baru"| A1["CS konfirmasi lokasi customer"]:::proc
+  Q1 -->|"Member"| B1["Deteksi lokasi & kirim pricelist outlet terdekat"]:::proc
+  Q1 -->|"Driver sendiri"| C1["Customer kirim alamat"]:::proc
+  Q1 -->|"Repeat order"| D1["Kirim form pickup"]:::proc
+  Q1 -->|"Promo"| E1["Kirim pricelist & cek ongkir"]:::proc
+  Q1 -->|"Ragu / pertimbangan"| F1["CS minta alamat & kirim pricelist"]:::proc
+  Q1 -->|"Komplain"| G0{"Jenis komplain?"}:::decision
+
+  A1 --> A2{"Lokasi diketahui?"}:::decision
+  A2 -->|Tidak| A2a["Tanyakan lokasi"]:::proc --> A2
+  A2 -->|Ya| A3["CS kirim pricelist"]:::proc
+  A3 --> A4{"Customer mau order?"}:::decision
+  A4 -->|Tidak| F2
+  A4 -->|Ya| A5["Customer isi form order"]:::proc
+  A5 --> A6["Cek ongkir Lalamove"]:::proc
+  A6 --> A7["Infokan ongkir"]:::proc
+  A7 --> A8{"Setuju ongkir?"}:::decision
+  A8 -->|Tidak| A8a["Tawarkan alternatif"]:::proc --> C1
+  A8 -->|Ya| A9["Booking Lalamove & kirim tracking"]:::proc
+  A9 --> A10["Kirim form & ongkir ke Telegram"]:::proc
+  A10 --> A11{"Cucian sampai outlet?"}:::decision
+  A11 -->|Belum| A11a["Tunggu"]:::proc --> A11
+  A11 -->|Sudah| A12["Crew kirim struk & timbangan via Telegram"]:::proc
+  A12 --> A13["Infokan ke customer & kirim QR"]:::proc
+  A13 --> A14{"Sudah bayar?"}:::decision
+  A14 -->|Belum| A14a["Follow up pembayaran"]:::proc --> A14
+  A14 -->|Sudah| A15["Kirim bukti bayar ke Telegram"]:::proc
+  A15 --> A16{"Cucian selesai?"}:::decision
+  A16 -->|Belum| A16a["Proses pencucian"]:::proc --> A16
+  A16 -->|Sudah| A17["Infokan selesai & pesan Lalamove antar"]:::proc
+  A17 --> ZEND(["✅ ORDER SELESAI"]):::endNode
+
+  F1 --> F1a{"Mau mencuci?"}:::decision
+  F1a -->|Ya| A5
+  F1a -->|Tidak| F2["Alasan keberatan"]:::proc
+  F2 --> F3["CS beri penjelasan"]:::proc
+  F3 --> F4{"Berubah pikiran?"}:::decision
+  F4 -->|Tidak| ZEND2(["⛔ Tidak jadi cuci"]):::endNode
+  F4 -->|Ya| A5
+
+  B1 --> B2{"Ada promo member?"}:::decision
+  B2 -->|Tidak| A4
+  B2 -->|Ya| B3["Tawarkan free ongkir"]:::proc
+  B3 --> B4{"Berminat?"}:::decision
+  B4 -->|Tidak| A4
+  B4 -->|Ya| B5["Jelaskan benefit & kirim form member"]:::proc
+  B5 --> B6["Customer isi form, generate data"]:::proc
+  B6 --> B7["Top up saldo via app"]:::proc
+  B7 --> B8["Approval top up internal"]:::proc
+  B8 --> B9["Kirim form pickup + S&K"]:::proc
+  B9 --> B10{"Pakai Lalamove?"}:::decision
+  B10 -->|Ya| B11["Booking Lalamove + tracking"]:::proc
+  B10 -->|Tidak| B12["Kirim data ke Telegram"]:::proc
+  B11 --> B12
+  B12 --> B13["Cucian tiba outlet"]:::proc
+  B13 --> B14["Kirim struk + QRIS"]:::proc
+  B14 --> B15["Customer bayar & bukti ke Telegram"]:::proc
+  B15 --> B16["Terima kasih"]:::proc
+  B16 --> B17["Tracking via barcode"]:::proc
+  B17 --> B18["Notifikasi selesai"]:::proc
+  B18 --> ZEND
+
+  C1 --> C2["Kirim pricelist"]:::proc
+  C2 --> C3["Cek ongkir Lalamove"]:::proc
+  C3 --> C4{"Pilih driver sendiri?"}:::decision
+  C4 -->|"Tidak"| A9
+  C4 -->|Ya| C5["Form order"]:::proc
+  C5 --> C6["Kirim ke Telegram"]:::proc
+  C6 --> C7["Cucian sampai, foto struk"]:::proc
+  C7 --> C8["Kirim struk & QR"]:::proc
+  C8 --> C9["Bayar & bukti ke Telegram"]:::proc
+  C9 --> C10["Selesai, infokan"]:::proc
+  C10 --> C11["Customer ambil sendiri"]:::proc
+  C11 --> ZEND
+
+  D1 --> D2["Validasi data pickup"]:::proc
+  D2 --> D3["Booking Lalamove & tracking"]:::proc
+  D3 --> D4["Kirim form ke Telegram"]:::proc
+  D4 --> D5["Infokan ongkir"]:::proc
+  D5 --> D6["Cucian tiba"]:::proc
+  D6 --> D7["Crew struk & timbangan"]:::proc
+  D7 --> D8["Kirim struk & QRIS"]:::proc
+  D8 --> D9{"Sudah bayar?"}:::decision
+  D9 -->|Belum| D9a["Follow up"]:::proc --> D9
+  D9 -->|Sudah| D10["Bukti ke Telegram"]:::proc
+  D10 --> D11{"Cucian selesai?"}:::decision
+  D11 -->|Belum| D11a["Proses"]:::proc --> D11
+  D11 -->|Sudah| D12["Infokan & Lalamove antar"]:::proc
+  D12 --> D13["Terima kasih"]:::proc
+  D13 --> D14["Tracking barcode"]:::proc
+  D14 --> ZEND
+
+  E1 --> E2{"Mau promo?"}:::decision
+  E2 -->|Tidak| E2a["Promo tidak tersedia"]:::proc --> ZEND2
+  E2 -->|Ya| E3["Form order"]:::proc
+  E3 --> E4["Booking Lalamove"]:::proc
+  E4 --> E5["Kirim ke Telegram"]:::proc
+  E5 --> E6["Cucian sampai, foto"]:::proc
+  E6 --> E7["Struk & QR"]:::proc
+  E7 --> E8["Bayar & bukti"]:::proc
+  E8 --> E9["Selesai, infokan"]:::proc
+  E9 --> E10{"Antar kapan?"}:::decision
+  E10 --> E11["Lalamove antar"]:::proc
+  E11 --> ZEND
+
+  G0 -->|"Kehilangan"| G1a["Konfirmasi jumlah item"]:::proc
+  G1a --> G1b["Admin Ops tracking (CCTV + buku)"]:::proc
+  G1b --> G1c["Infokan investigasi"]:::proc
+  G1c --> G1d{"Jumlah sesuai?"}:::decision
+  G1d -->|Ya| G1e["Penjelasan hasil"]:::proc --> ZEND3(["📋 COMPLAINT SELESAI"]):::endNode
+  G1d -->|Tidak| G1f{"Tercampur?"}:::decision
+  G1f -->|Ya| G1g["Hubungi customer lain"]:::proc
+  G1g --> G1h{"Dikembalikan?"}:::decision
+  G1h -->|Ya| G1i["Atur pengiriman"]:::proc --> ZEND3
+  G1h -->|Tidak| G1j["Ganti rugi SOP"]:::proc --> ZEND3
+  G1f -->|Tidak| G1j
+
+  G0 -->|"Luntur"| G2a{"Jenis layanan?"}:::decision
+  G2a -->|Kiloan| G2b["Penjelasan template"]:::proc --> ZEND3
+  G2a -->|Satuan| G2c["Tawarkan rewash"]:::proc
+  G2c --> G2d{"Setuju?"}:::decision
+  G2d -->|Ya| G2e["Rewash SOP"]:::proc --> ZEND3
+  G2d -->|Tidak| G2f["Penjelasan & solusi"]:::proc --> ZEND3
+
+  G0 -->|"Rusak"| G3a["Cek crew: ada antisipasi?"]:::proc
+  G3a --> G3b{"Ada antisipasi?"}:::decision
+  G3b -->|Ya| G3c["Sudah ada, tidak diganti"]:::proc --> ZEND3
+  G3b -->|Tidak| G3d["Kelalaian, ganti sesuai SNK"]:::proc --> ZEND3
+
+  G0 -->|"Tidak sesuai S&K"| G4a["Minta struk"]:::proc
+  G4a --> G4b{"Sesuai SNK?"}:::decision
+  G4b -->|Ya| G4c["Jelaskan SNK"]:::proc --> ZEND3
+  G4b -->|Tidak| G4d["Kirim SNK"]:::proc
+  G4d --> G4e["Masukan perbaikan"]:::proc --> ZEND3
+
+  G0 -->|"Perlu tracking"| G5a["Form complaint"]:::proc
+  G5a --> G5b["Customer isi form"]:::proc
+  G5b --> G5c["Masuk tracking Admin Ops"]:::proc
+  G5c --> G5d["Tracking maks H+2"]:::proc
+  G5d --> G5e["Admin Ops tracking SOP"]:::proc
+  G5e --> G5f["Lampirkan hasil"]:::proc
+  G5f --> G5g["Infokan sesuai SNK"]:::proc --> ZEND3
+
+  classDef startNode fill:#fee2e2,stroke:#f87171,stroke-width:2px,color:#7f1d1d,font-weight:700;
+  classDef endNode fill:#dcfce7,stroke:#4ade80,stroke-width:2px,color:#14532d,font-weight:700;
+  classDef decision fill:#fef3c7,stroke:#fbbf24,stroke-width:1.5px,color:#78350f;
+  classDef proc fill:#dbeafe,stroke:#93c5fd,stroke-width:1px,color:#1e3a5f;
+      </div>
+    </div>
+
+    <!-- ──── PANEL: TIER 1 ──── -->
+    <div class="diagram-panel" id="panel-tier1">
+      <div class="mermaid" id="diagram-tier1">
+flowchart TD
+  START(["☎️ Customer chat masuk"]):::af --> Q1{"Kebutuhan customer?"}:::af
+
+  Q1 -->|"Order baru"| A1["🤖 Bot deteksi lokasi"]:::af
+  Q1 -->|"Member"| B1["🤖 Bot kirim pricelist"]:::af
+  Q1 -->|"Driver sendiri"| C1["🤖 Bot minta alamat"]:::af
+  Q1 -->|"Repeat order"| D1["🤖 Bot kirim form pickup"]:::ap
+  Q1 -->|"Promo"| E1["🤖 Bot info promo & pricelist"]:::af
+  Q1 -->|"Ragu"| F1["🤖 Bot minta alamat & pricelist"]:::af
+  Q1 -->|"Komplain"| G0{"Jenis komplain?"}:::ai
+
+  A1 --> A2{"Lokasi diketahui?"}:::af
+  A2 -->|Tidak| A2a["🤖 Tanyakan lagi"]:::af --> A2
+  A2 -->|Ya| A3["🤖 Kirim pricelist otomatis"]:::af
+  A3 --> A4{"Mau order?"}:::af
+  A4 -->|Tidak| F2
+  A4 -->|Ya| A5["🤖 Tampilkan form order"]:::af
+  A5 --> A6["👤 CS cek ongkir Lalamove"]:::am
+  A6 --> A7["👤 Infokan ongkir"]:::am
+  A7 --> A8{"Setuju ongkir?"}:::am
+  A8 -->|Tidak| A8a["🤖 Tawarkan driver sendiri"]:::af --> C1
+  A8 -->|Ya| A9["👤 Booking Lalamove & tracking"]:::am
+  A9 --> A10["👤 Kirim ke Telegram"]:::am
+  A10 --> A11{"Cucian sampai?"}:::am
+  A11 -->|Belum| A11a["⏳ Tunggu"]:::am --> A11
+  A11 -->|Sudah| A12["👤 Crew struk via Telegram"]:::am
+  A12 --> A13["👤 Infokan & kirim QR"]:::am
+  A13 --> A14{"Sudah bayar?"}:::am
+  A14 -->|Belum| A14a["👤 Follow up"]:::am --> A14
+  A14 -->|Sudah| A15["👤 Bukti ke Telegram"]:::am
+  A15 --> A16{"Cucian selesai?"}:::am
+  A16 -->|Belum| A16a["⏳ Proses"]:::am --> A16
+  A16 -->|Sudah| A17["👤 Infokan & Lalamove antar"]:::am
+  A17 --> ZEND(["✅ ORDER SELESAI"]):::endN
+
+  F1 --> F1a{"Mau cuci?"}:::af
+  F1a -->|Ya| A5
+  F1a -->|Tidak| F2["🤖 Bot catat alasan"]:::af
+  F2 --> F3["🤖 Bot beri penjelasan template"]:::af
+  F3 --> F4{"Berubah pikiran?"}:::af
+  F4 -->|Tidak| ZEND2(["⛔ Tidak jadi"]):::endN
+  F4 -->|Ya| A5
+
+  B1 --> B2{"Promo member?"}:::af
+  B2 -->|Tidak| A4
+  B2 -->|Ya| B3["🤖 Tawarkan free ongkir"]:::af
+  B3 --> B4{"Berminat?"}:::af
+  B4 -->|Tidak| A4
+  B4 -->|Ya| B5["🤖 Jelaskan benefit & form"]:::af
+  B5 --> B6["🔶 Bot intake form member"]:::ap
+  B6 --> B7["👤 Top up via app"]:::am
+  B7 --> B8["👤 Approval internal"]:::am
+  B8 --> B9["🔶 Bot kirim form pickup + S&K"]:::ap
+  B9 --> B10{"Pakai Lalamove?"}:::am
+  B10 -->|Ya| B11["👤 Booking Lalamove"]:::am
+  B10 -->|Tidak| B12["👤 Data ke Telegram"]:::am
+  B11 --> B12
+  B12 --> B13["👤 Cucian tiba"]:::am
+  B13 --> B14["👤 Struk & QRIS"]:::am
+  B14 --> B15["👤 Bayar & bukti"]:::am
+  B15 --> B16["🤖 Terima kasih"]:::af
+  B16 --> B17["👤 Tracking barcode"]:::am
+  B17 --> B18["👤 Notifikasi selesai"]:::am
+  B18 --> ZEND
+
+  C1 --> C2["🤖 Kirim pricelist"]:::af
+  C2 --> C3["👤 Cek ongkir Lalamove"]:::am
+  C3 --> C4{"Driver sendiri?"}:::am
+  C4 -->|Tidak| A9
+  C4 -->|Ya| C5["🤖 Form order"]:::af
+  C5 --> C6["👤 Kirim ke Telegram"]:::am
+  C6 --> C7["👤 Foto struk"]:::am
+  C7 --> C8["👤 Struk & QR"]:::am
+  C8 --> C9["👤 Bayar & bukti"]:::am
+  C9 --> C10["👤 Selesai"]:::am
+  C10 --> C11["👤 Ambil sendiri"]:::am
+  C11 --> ZEND
+
+  D1 --> D2["🔶 Bot validasi + CS konfirmasi"]:::ap
+  D2 --> D3["👤 Booking Lalamove"]:::am
+  D3 --> D4["👤 Form ke Telegram"]:::am
+  D4 --> D5["👤 Infokan ongkir"]:::am
+  D5 --> D6["👤 Cucian tiba"]:::am
+  D6 --> D7["👤 Crew struk"]:::am
+  D7 --> D8["👤 Struk & QRIS"]:::am
+  D8 --> D9{"Bayar?"}:::am
+  D9 -->|Belum| D9a["👤 Follow up"]:::am --> D9
+  D9 -->|Sudah| D10["👤 Bukti Telegram"]:::am
+  D10 --> D11{"Selesai?"}:::am
+  D11 -->|Belum| D11a["⏳"]:::am --> D11
+  D11 -->|Sudah| D12["👤 Infokan & antar"]:::am
+  D12 --> D13["🤖 Terima kasih"]:::af
+  D13 --> D14["👤 Tracking"]:::am
+  D14 --> ZEND
+
+  E1 --> E2{"Mau promo?"}:::af
+  E2 -->|Tidak| E2a["🤖 Info tidak tersedia"]:::af --> ZEND2
+  E2 -->|Ya| E3["🤖 Form order"]:::af
+  E3 --> E4["👤 Booking Lalamove"]:::am
+  E4 --> E5["👤 Telegram"]:::am
+  E5 --> E6["👤 Foto struk"]:::am
+  E6 --> E7["👤 Struk & QR"]:::am
+  E7 --> E8["👤 Bayar"]:::am
+  E8 --> E9["👤 Selesai"]:::am
+  E9 --> E10{"Antar kapan?"}:::am
+  E10 --> E11["👤 Lalamove antar"]:::am
+  E11 --> ZEND
+
+  G0 -->|"Kehilangan"| G1a["🟣 Intake: konfirmasi item"]:::ai
+  G1a --> G1b["👤 Admin Ops tracking"]:::am
+  G1b --> G1c["👤 Infokan investigasi"]:::am
+  G1c --> G1d{"Sesuai?"}:::am
+  G1d -->|Ya| G1e["👤 Penjelasan"]:::am --> ZEND3(["📋 COMPLAINT SELESAI"]):::endN
+  G1d -->|Tidak| G1f{"Tercampur?"}:::am
+  G1f -->|Ya| G1g["👤 Hubungi customer"]:::am --> G1h{"Kembali?"}:::am
+  G1h -->|Ya| G1i["👤 Kirim balik"]:::am --> ZEND3
+  G1h -->|Tidak| G1j["👤 Ganti rugi"]:::am --> ZEND3
+  G1f -->|Tidak| G1j
+
+  G0 -->|"Luntur"| G2a{"Layanan?"}:::ai
+  G2a -->|Kiloan| G2b["🤖 Template kiloan"]:::af --> ZEND3
+  G2a -->|Satuan| G2c["🟣 Tawarkan rewash"]:::ai --> G2d{"Setuju?"}:::ai
+  G2d -->|Ya| G2e["👤 Rewash SOP"]:::am --> ZEND3
+  G2d -->|Tidak| G2f["👤 Solusi lain"]:::am --> ZEND3
+
+  G0 -->|"Rusak"| G3a["🟣 Intake: detail kerusakan"]:::ai
+  G3a --> G3b{"Antisipasi?"}:::am
+  G3b -->|Ya| G3c["👤 Tidak diganti"]:::am --> ZEND3
+  G3b -->|Tidak| G3d["👤 Ganti SNK"]:::am --> ZEND3
+
+  G0 -->|"Tidak sesuai S&K"| G4a["🟣 Intake: minta struk"]:::ai
+  G4a --> G4b{"Sesuai SNK?"}:::am
+  G4b -->|Ya| G4c["👤 Jelaskan"]:::am --> ZEND3
+  G4b -->|Tidak| G4d["👤 Kirim SNK"]:::am --> G4e["👤 Masukan"]:::am --> ZEND3
+
+  G0 -->|"Perlu tracking"| G5a["🟣 Bot form complaint"]:::ai
+  G5a --> G5b["🟣 Terima isian"]:::ai
+  G5b --> G5c["👤 Admin Ops"]:::am
+  G5c --> G5d["👤 Tracking H+2"]:::am
+  G5d --> G5e["👤 Tracking SOP"]:::am
+  G5e --> G5f["👤 Lampirkan hasil"]:::am
+  G5f --> G5g["👤 Infokan SNK"]:::am --> ZEND3
+
+  classDef af fill:#d1fae5,stroke:#16a34a,stroke-width:2px,color:#052e16,font-weight:600;
+  classDef ap fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#422006,font-weight:600,stroke-dasharray:6 3;
+  classDef am fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#450a0a,font-weight:600;
+  classDef ai fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e1b4b,font-weight:600,stroke-dasharray:4 4;
+  classDef endN fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#14532d,font-weight:700;
+      </div>
+    </div>
+
+    <!-- ──── PANEL: TIER 2 ──── -->
+    <div class="diagram-panel" id="panel-tier2">
+      <div class="mermaid" id="diagram-tier2">
+flowchart TD
+  START(["☎️ Customer chat masuk"]):::af --> Q1{"Kebutuhan customer?"}:::af
+
+  Q1 -->|"Order baru"| A1["🤖 Bot deteksi lokasi"]:::af
+  Q1 -->|"Member"| B1["🤖 Bot kirim pricelist"]:::af
+  Q1 -->|"Driver sendiri"| C1["🤖 Bot minta alamat"]:::af
+  Q1 -->|"Repeat order"| D1["🤖 Bot kirim form pickup"]:::af
+  Q1 -->|"Promo"| E1["🤖 Bot info promo"]:::af
+  Q1 -->|"Ragu"| F1["🤖 Bot pricelist"]:::af
+  Q1 -->|"Komplain"| G0{"Jenis komplain?"}:::ai
+
+  A1 --> A2{"Lokasi diketahui?"}:::af
+  A2 -->|Tidak| A2a["🤖 Tanyakan lagi"]:::af --> A2
+  A2 -->|Ya| A3["🤖 Kirim pricelist"]:::af
+  A3 --> A4{"Mau order?"}:::af
+  A4 -->|Tidak| F2
+  A4 -->|Ya| A5["🤖 Form order"]:::af
+  A5 --> A6["👤 Cek ongkir Lalamove"]:::am
+  A6 --> A7["👤 Infokan ongkir"]:::am
+  A7 --> A8{"Setuju?"}:::am
+  A8 -->|Tidak| A8a["🤖 Tawarkan driver sendiri"]:::af --> C1
+  A8 -->|Ya| A9["👤 Booking Lalamove"]:::am
+  A9 --> A10["👤 Kirim ke Telegram"]:::am
+  A10 --> A11{"Cucian sampai?"}:::t2
+  A11 -->|Belum| A11a["🔵 Bot cek status real-time"]:::t2 --> A11
+  A11 -->|Sudah| A12["👤 Crew struk via Telegram"]:::am
+  A12 --> A13["👤 Infokan & QR"]:::am
+  A13 --> A14{"Bayar?"}:::am
+  A14 -->|Belum| A14a["👤 Follow up"]:::am --> A14
+  A14 -->|Sudah| A15["👤 Bukti ke Telegram"]:::am
+  A15 --> A16{"Selesai?"}:::t2
+  A16 -->|Belum| A16a["🔵 Bot tracking status cucian"]:::t2 --> A16
+  A16 -->|Sudah| A17["🔵 Bot notif selesai + 👤 Lalamove"]:::ap
+  A17 --> ZEND(["✅ ORDER SELESAI"]):::endN
+
+  F1 --> F1a{"Mau cuci?"}:::af
+  F1a -->|Ya| A5
+  F1a -->|Tidak| F2["🤖 Catat alasan"]:::af
+  F2 --> F3["🤖 Penjelasan + 🔵 rekomendasi personal"]:::t2
+  F3 --> F4{"Berubah?"}:::af
+  F4 -->|Tidak| ZEND2(["⛔ Tidak jadi"]):::endN
+  F4 -->|Ya| A5
+
+  B1 --> B2{"Promo member?"}:::af
+  B2 -->|Tidak| A4
+  B2 -->|Ya| B3["🤖 Free ongkir"]:::af
+  B3 --> B4{"Minat?"}:::af
+  B4 -->|Tidak| A4
+  B4 -->|Ya| B5["🤖 Benefit & form"]:::af
+  B5 --> B6["🔶 Bot intake member"]:::ap
+  B6 --> B7["👤 Top up app"]:::am
+  B7 --> B8["👤 Approval internal"]:::am
+  B8 --> B9["🤖 Form pickup + S&K"]:::af
+  B9 --> B10{"Pakai Lalamove?"}:::am
+  B10 -->|Ya| B11["👤 Booking"]:::am
+  B10 -->|Tidak| B12["👤 Telegram"]:::am
+  B11 --> B12
+  B12 --> B13["👤 Cucian tiba"]:::am
+  B13 --> B14["👤 Struk & QRIS"]:::am
+  B14 --> B15["👤 Bayar"]:::am
+  B15 --> B16["🤖 Terima kasih"]:::af
+  B16 --> B17["🔵 Bot tracking status real-time"]:::t2
+  B17 --> B18["🔵 Bot notifikasi selesai otomatis"]:::t2
+  B18 --> ZEND
+
+  C1 --> C2["🤖 Pricelist"]:::af
+  C2 --> C3["👤 Cek ongkir"]:::am
+  C3 --> C4{"Driver sendiri?"}:::am
+  C4 -->|Tidak| A9
+  C4 -->|Ya| C5["🤖 Form order"]:::af
+  C5 --> C6["👤 Telegram"]:::am
+  C6 --> C7["👤 Foto struk"]:::am
+  C7 --> C8["👤 Struk & QR"]:::am
+  C8 --> C9["👤 Bayar"]:::am
+  C9 --> C10["🔵 Bot tracking + notif selesai"]:::t2
+  C10 --> C11["👤 Ambil sendiri"]:::am
+  C11 --> ZEND
+
+  D1 --> D2["🤖 Bot validasi data"]:::af
+  D2 --> D3["👤 Booking Lalamove"]:::am
+  D3 --> D4["👤 Telegram"]:::am
+  D4 --> D5["👤 Infokan ongkir"]:::am
+  D5 --> D6["👤 Cucian tiba"]:::am
+  D6 --> D7["👤 Crew struk"]:::am
+  D7 --> D8["👤 QRIS"]:::am
+  D8 --> D9{"Bayar?"}:::am
+  D9 -->|Belum| D9a["👤 Follow up"]:::am --> D9
+  D9 -->|Sudah| D10["👤 Bukti Telegram"]:::am
+  D10 --> D11{"Selesai?"}:::t2
+  D11 -->|Belum| D11a["🔵 Bot tracking real-time"]:::t2 --> D11
+  D11 -->|Sudah| D12["🔵 Bot notif + 👤 Lalamove"]:::ap
+  D12 --> D13["🤖 Terima kasih"]:::af
+  D13 --> D14["🔵 Bot tracking real-time"]:::t2
+  D14 --> ZEND
+
+  E1 --> E2{"Mau promo?"}:::af
+  E2 -->|Tidak| E2a["🤖 Info"]:::af --> ZEND2
+  E2 -->|Ya| E3["🤖 Form"]:::af
+  E3 --> E4["👤 Booking"]:::am
+  E4 --> E5["👤 Telegram"]:::am
+  E5 --> E6["👤 Foto struk"]:::am
+  E6 --> E7["👤 QR"]:::am
+  E7 --> E8["👤 Bayar"]:::am
+  E8 --> E9["🔵 Bot tracking + notif selesai"]:::t2
+  E9 --> E10{"Antar kapan?"}:::am
+  E10 --> E11["👤 Lalamove"]:::am
+  E11 --> ZEND
+
+  G0 -->|"Kehilangan"| G1a["🟣 Intake item"]:::ai
+  G1a --> G1b["👤 Admin Ops"]:::am
+  G1b --> G1c["👤 Infokan"]:::am
+  G1c --> G1d{"Sesuai?"}:::am
+  G1d -->|Ya| G1e["👤 Penjelasan"]:::am --> ZEND3(["📋 COMPLAINT SELESAI"]):::endN
+  G1d -->|Tidak| G1f{"Tercampur?"}:::am
+  G1f -->|Ya| G1g["👤 Hubungi"]:::am --> G1h{"Kembali?"}:::am
+  G1h -->|Ya| G1i["👤 Kirim"]:::am --> ZEND3
+  G1h -->|Tidak| G1j["👤 Ganti rugi"]:::am --> ZEND3
+  G1f -->|Tidak| G1j
+
+  G0 -->|"Luntur"| G2a{"Layanan?"}:::ai
+  G2a -->|Kiloan| G2b["🤖 Template"]:::af --> ZEND3
+  G2a -->|Satuan| G2c["🟣 Rewash?"]:::ai --> G2d{"Setuju?"}:::ai
+  G2d -->|Ya| G2e["👤 Rewash"]:::am --> ZEND3
+  G2d -->|Tidak| G2f["👤 Solusi"]:::am --> ZEND3
+
+  G0 -->|"Rusak"| G3a["🟣 Intake detail"]:::ai
+  G3a --> G3b{"Antisipasi?"}:::am
+  G3b -->|Ya| G3c["👤 Tidak diganti"]:::am --> ZEND3
+  G3b -->|Tidak| G3d["👤 Ganti SNK"]:::am --> ZEND3
+
+  G0 -->|"Tidak sesuai"| G4a["🟣 Minta struk"]:::ai
+  G4a --> G4b{"Sesuai?"}:::am
+  G4b -->|Ya| G4c["👤 Jelaskan"]:::am --> ZEND3
+  G4b -->|Tidak| G4d["👤 SNK"]:::am --> G4e["👤 Masukan"]:::am --> ZEND3
+
+  G0 -->|"Tracking"| G5a["🟣 Form complaint"]:::ai
+  G5a --> G5b["🟣 Terima isian"]:::ai
+  G5b --> G5c["👤 Admin Ops"]:::am
+  G5c --> G5d["🔵 Bot update tracking real-time"]:::t2
+  G5d --> G5e["👤 Tracking SOP"]:::am
+  G5e --> G5f["👤 Hasil"]:::am
+  G5f --> G5g["👤 SNK"]:::am --> ZEND3
+
+  classDef af fill:#d1fae5,stroke:#16a34a,stroke-width:2px,color:#052e16,font-weight:600;
+  classDef ap fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#422006,font-weight:600,stroke-dasharray:6 3;
+  classDef am fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#450a0a,font-weight:600;
+  classDef ai fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e1b4b,font-weight:600,stroke-dasharray:4 4;
+  classDef t2 fill:#dbeafe,stroke:#2563eb,stroke-width:2.5px,color:#1e3a8a,font-weight:700;
+  classDef endN fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#14532d,font-weight:700;
+      </div>
+    </div>
+
+    <!-- ──── PANEL: TIER 3 ──── -->
+    <div class="diagram-panel" id="panel-tier3">
+      <div class="mermaid" id="diagram-tier3">
+flowchart TD
+  START(["☎️ Customer chat masuk"]):::af --> Q1{"Kebutuhan customer?"}:::af
+
+  Q1 -->|"Order baru"| A1["🤖 Bot deteksi lokasi"]:::af
+  Q1 -->|"Member"| B1["🤖 Bot pricelist"]:::af
+  Q1 -->|"Driver sendiri"| C1["🤖 Bot minta alamat"]:::af
+  Q1 -->|"Repeat order"| D1["🤖 Bot form pickup"]:::af
+  Q1 -->|"Promo"| E1["🤖 Bot info promo"]:::af
+  Q1 -->|"Ragu"| F1["🤖 Bot pricelist"]:::af
+  Q1 -->|"Komplain"| G0{"Jenis komplain?"}:::ap
+  Q1 -->|"🟣 Franchise inquiry"| FQ1["🟣 Bot kualifikasi lead (modal, kota, timeline)"]:::t3
+
+  FQ1 --> FQ2["🟣 Bot kirim data terstruktur ke CRM"]:::t3
+  FQ2 --> FQ3["👤 Tim sales follow up"]:::am
+  FQ3 --> FQEND(["🏢 LEAD QUALIFIED"]):::endN
+
+  A1 --> A2{"Lokasi?"}:::af
+  A2 -->|Tidak| A2a["🤖 Tanyakan"]:::af --> A2
+  A2 -->|Ya| A3["🤖 Pricelist"]:::af
+  A3 --> A4{"Order?"}:::af
+  A4 -->|Tidak| F2
+  A4 -->|Ya| A5["🤖 Form order"]:::af
+  A5 --> A6["🟣 Bot cek ongkir via Lalamove API"]:::t3
+  A6 --> A7["🟣 Bot infokan ongkir otomatis"]:::t3
+  A7 --> A8{"Setuju?"}:::af
+  A8 -->|Tidak| A8a["🤖 Tawarkan driver sendiri"]:::af --> C1
+  A8 -->|Ya| A9["🟣 Bot booking Lalamove API otomatis"]:::t3
+  A9 --> A10["👤 Notif Telegram (audit trail)"]:::am
+  A10 --> A11{"Cucian sampai?"}:::af
+  A11 -->|Belum| A11a["🔵 Bot tracking real-time"]:::af --> A11
+  A11 -->|Sudah| A12["👤 Crew struk Telegram"]:::am
+  A12 --> A13["👤 QR ke customer"]:::am
+  A13 --> A14{"Bayar?"}:::am
+  A14 -->|Belum| A14a["👤 Follow up"]:::am --> A14
+  A14 -->|Sudah| A15["👤 Bukti Telegram"]:::am
+  A15 --> A16{"Selesai?"}:::af
+  A16 -->|Belum| A16a["🔵 Bot tracking"]:::af --> A16
+  A16 -->|Sudah| A17["🟣 Bot notif + booking Lalamove antar"]:::t3
+  A17 --> ZEND(["✅ ORDER SELESAI"]):::endN
+
+  F1 --> F1a{"Mau?"}:::af
+  F1a -->|Ya| A5
+  F1a -->|Tidak| F2["🤖 Catat alasan"]:::af
+  F2 --> F3["🤖 Penjelasan + rekomendasi personal"]:::af
+  F3 --> F4{"Berubah?"}:::af
+  F4 -->|Tidak| ZEND2(["⛔ Tidak jadi"]):::endN
+  F4 -->|Ya| A5
+
+  B1 --> B2{"Promo?"}:::af
+  B2 -->|Tidak| A4
+  B2 -->|Ya| B3["🤖 Free ongkir"]:::af
+  B3 --> B4{"Minat?"}:::af
+  B4 -->|Tidak| A4
+  B4 -->|Ya| B5["🤖 Benefit & form"]:::af
+  B5 --> B6["🔶 Bot intake member"]:::ap
+  B6 --> B7["👤 Top up app"]:::am
+  B7 --> B8["👤 Approval internal"]:::am
+  B8 --> B9["🤖 Form pickup + S&K"]:::af
+  B9 --> B10{"Lalamove?"}:::af
+  B10 -->|Ya| B11["🟣 Bot booking Lalamove API"]:::t3
+  B10 -->|Tidak| B12["👤 Telegram"]:::am
+  B11 --> B12
+  B12 --> B13["👤 Cucian tiba"]:::am
+  B13 --> B14["👤 Struk & QRIS"]:::am
+  B14 --> B15["👤 Bayar"]:::am
+  B15 --> B16["🤖 Terima kasih"]:::af
+  B16 --> B17["🔵 Bot tracking real-time"]:::af
+  B17 --> B18["🔵 Bot notif selesai"]:::af
+  B18 --> ZEND
+
+  C1 --> C2["🤖 Pricelist"]:::af
+  C2 --> C3["🟣 Bot cek ongkir Lalamove API"]:::t3
+  C3 --> C4{"Driver sendiri?"}:::af
+  C4 -->|Tidak| A9
+  C4 -->|Ya| C5["🤖 Form order"]:::af
+  C5 --> C6["👤 Telegram"]:::am
+  C6 --> C7["👤 Foto struk"]:::am
+  C7 --> C8["👤 QR"]:::am
+  C8 --> C9["👤 Bayar"]:::am
+  C9 --> C10["🔵 Bot tracking + notif"]:::af
+  C10 --> C11["👤 Ambil sendiri"]:::am
+  C11 --> ZEND
+
+  D1 --> D2["🤖 Bot validasi data"]:::af
+  D2 --> D3["🟣 Bot booking Lalamove API"]:::t3
+  D3 --> D4["👤 Telegram (audit)"]:::am
+  D4 --> D5["🟣 Bot infokan ongkir"]:::t3
+  D5 --> D6["👤 Cucian tiba"]:::am
+  D6 --> D7["👤 Crew struk"]:::am
+  D7 --> D8["👤 QRIS"]:::am
+  D8 --> D9{"Bayar?"}:::am
+  D9 -->|Belum| D9a["👤 Follow up"]:::am --> D9
+  D9 -->|Sudah| D10["👤 Bukti Telegram"]:::am
+  D10 --> D11{"Selesai?"}:::af
+  D11 -->|Belum| D11a["🔵 Bot tracking"]:::af --> D11
+  D11 -->|Sudah| D12["🟣 Bot notif + booking antar"]:::t3
+  D12 --> D13["🤖 Terima kasih"]:::af
+  D13 --> D14["🔵 Bot tracking"]:::af
+  D14 --> ZEND
+
+  E1 --> E2{"Promo?"}:::af
+  E2 -->|Tidak| E2a["🤖 Info"]:::af --> ZEND2
+  E2 -->|Ya| E3["🤖 Form"]:::af
+  E3 --> E4["🟣 Bot booking Lalamove API"]:::t3
+  E4 --> E5["👤 Telegram (audit)"]:::am
+  E5 --> E6["👤 Foto struk"]:::am
+  E6 --> E7["👤 QR"]:::am
+  E7 --> E8["👤 Bayar"]:::am
+  E8 --> E9["🔵 Bot tracking + notif"]:::af
+  E9 --> E10{"Antar?"}:::af
+  E10 --> E11["🟣 Bot Lalamove antar"]:::t3
+  E11 --> ZEND
+
+  G0 -->|"Kehilangan"| G1a["🟣 Intake item"]:::ap
+  G1a --> G1b["👤 Admin Ops"]:::am
+  G1b --> G1c["👤 Infokan"]:::am
+  G1c --> G1d{"Sesuai?"}:::am
+  G1d -->|Ya| G1e["👤 Penjelasan"]:::am --> ZEND3(["📋 COMPLAINT SELESAI"]):::endN
+  G1d -->|Tidak| G1f{"Tercampur?"}:::am
+  G1f -->|Ya| G1g["👤 Hubungi"]:::am --> G1h{"Kembali?"}:::am
+  G1h -->|Ya| G1i["👤 Kirim"]:::am --> ZEND3
+  G1h -->|Tidak| G1j["👤 Ganti rugi"]:::am --> ZEND3
+  G1f -->|Tidak| G1j
+
+  G0 -->|"Luntur"| G2a{"Layanan?"}:::ap
+  G2a -->|Kiloan| G2b["🤖 Template"]:::af --> ZEND3
+  G2a -->|Satuan| G2c["🔶 Bot tawarkan rewash + SOP"]:::ap --> G2d{"Setuju?"}:::ap
+  G2d -->|Ya| G2e["👤 Rewash"]:::am --> ZEND3
+  G2d -->|Tidak| G2f["👤 Solusi"]:::am --> ZEND3
+
+  G0 -->|"Rusak"| G3a["🔶 Bot intake + SOP check"]:::ap
+  G3a --> G3b{"Antisipasi?"}:::am
+  G3b -->|Ya| G3c["👤 Tidak diganti"]:::am --> ZEND3
+  G3b -->|Tidak| G3d["👤 Ganti SNK"]:::am --> ZEND3
+
+  G0 -->|"Tidak sesuai"| G4a["🔶 Bot minta struk + SNK"]:::ap
+  G4a --> G4b{"Sesuai?"}:::am
+  G4b -->|Ya| G4c["👤 Jelaskan"]:::am --> ZEND3
+  G4b -->|Tidak| G4d["👤 SNK"]:::am --> G4e["👤 Masukan"]:::am --> ZEND3
+
+  G0 -->|"Tracking"| G5a["🔶 Bot form + terima isian"]:::ap
+  G5a --> G5b["👤 Admin Ops"]:::am
+  G5b --> G5c["🔵 Bot update tracking real-time"]:::af
+  G5c --> G5d["👤 Tracking SOP"]:::am
+  G5d --> G5e["👤 Hasil"]:::am
+  G5e --> G5f["👤 SNK"]:::am --> ZEND3
+
+  classDef af fill:#d1fae5,stroke:#16a34a,stroke-width:2px,color:#052e16,font-weight:600;
+  classDef ap fill:#fef9c3,stroke:#ca8a04,stroke-width:2px,color:#422006,font-weight:600,stroke-dasharray:6 3;
+  classDef am fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#450a0a,font-weight:600;
+  classDef ai fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#1e1b4b,font-weight:600,stroke-dasharray:4 4;
+  classDef t3 fill:#f3e8ff,stroke:#9333ea,stroke-width:2.5px,color:#581c87,font-weight:700;
+  classDef endN fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#14532d,font-weight:700;
+      </div>
+    </div>
+
+  </div>
+  <div class="pan-hint" id="panHint">🖱️ Scroll untuk zoom · Drag untuk geser · Tombol +/− untuk kontrol zoom</div>
+</div>
+
+<!-- ════════════ FOOTER ════════════ -->
+<footer>
+  <span><span class="brand">Laundry Club × QRocketLab</span> — Master Flowchart CS (11 flow operasional)</span>
+  <span>Lampiran Engagement Letter · Juli 2026 · CONFIDENTIAL</span>
+</footer>
+
+<!-- ════════════ SCRIPTS ════════════ -->
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  themeVariables: {
+    fontFamily: "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif",
+    fontSize: '14px',
+    primaryColor: '#dbeafe',
+    primaryBorderColor: '#93c5fd',
+    primaryTextColor: '#1e3a5f',
+    lineColor: '#6b7f9e',
+    edgeLabelBackground: '#ffffff',
+  },
+  flowchart: {
+    curve: 'basis',
+    nodeSpacing: 30,
+    rankSpacing: 45,
+    htmlLabels: true,
+    wrap: true,
+    useMaxWidth: false,
+  },
+});
+
+// ═══ State ═══
+let currentView = 'master';
+const rendered = new Set();
+let scale = 1;
+let panX = 0, panY = 0;
+let isPanning = false;
+let startX, startY, startPanX, startPanY;
+const MIN_SCALE = 0.15;
+const MAX_SCALE = 3;
+
+const container = document.getElementById('canvasContainer');
+const inner = document.getElementById('canvasInner');
+const zoomLabel = document.getElementById('zoomLabel');
+const panHint = document.getElementById('panHint');
+
+// ═══ Render a mermaid diagram ═══
+async function renderDiagram(id) {
+  if (rendered.has(id)) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  try {
+    const { svg } = await mermaid.render(id + '-svg', el.textContent);
+    el.innerHTML = svg;
+    rendered.add(id);
+  } catch (e) {
+    console.error('Mermaid render error:', e);
+    el.innerHTML = '<p style="color:red;padding:20px;">Render error — lihat console.</p>';
+  }
+}
+
+// ═══ Apply transform ═══
+function applyTransform() {
+  inner.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+  zoomLabel.textContent = Math.round(scale * 100) + '%';
+}
+
+// ═══ Zoom ═══
+window.zoomDelta = function(delta) {
+  const rect = container.getBoundingClientRect();
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+  zoomAt(cx, cy, delta);
+};
+
+function zoomAt(cx, cy, delta) {
+  const oldScale = scale;
+  scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale + delta));
+  const ratio = scale / oldScale;
+  panX = cx - ratio * (cx - panX);
+  panY = cy - ratio * (cy - panY);
+  applyTransform();
+}
+
+// ═══ Fit to screen ═══
+window.fitToScreen = function() {
+  const activePanel = document.querySelector('.diagram-panel.active');
+  if (!activePanel) return;
+  const svg = activePanel.querySelector('svg');
+  if (!svg) return;
+  const rect = container.getBoundingClientRect();
+  const svgW = svg.viewBox?.baseVal?.width || svg.getBoundingClientRect().width / scale;
+  const svgH = svg.viewBox?.baseVal?.height || svg.getBoundingClientRect().height / scale;
+  const pad = 80;
+  const sx = (rect.width - pad) / (svgW + 120);
+  const sy = (rect.height - pad) / (svgH + 120);
+  scale = Math.min(sx, sy, MAX_SCALE);
+  scale = Math.max(scale, MIN_SCALE);
+  panX = (rect.width - svgW * scale) / 2 - 60 * scale;
+  panY = (rect.height - svgH * scale) / 2 - 60 * scale;
+  applyTransform();
+};
+
+window.resetView = function() {
+  scale = 1; panX = 0; panY = 0;
+  applyTransform();
+};
+
+// ═══ Pan (mouse) ═══
+container.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  isPanning = true;
+  startX = e.clientX; startY = e.clientY;
+  startPanX = panX; startPanY = panY;
+});
+window.addEventListener('mousemove', (e) => {
+  if (!isPanning) return;
+  panX = startPanX + (e.clientX - startX);
+  panY = startPanY + (e.clientY - startY);
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { isPanning = false; });
+
+// ═══ Pan (touch) ═══
+let lastTouchDist = 0;
+container.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) {
+    isPanning = true;
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    startPanX = panX; startPanY = panY;
+  } else if (e.touches.length === 2) {
+    isPanning = false;
+    lastTouchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+}, { passive: true });
+container.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 1 && isPanning) {
+    panX = startPanX + (e.touches[0].clientX - startX);
+    panY = startPanY + (e.touches[0].clientY - startY);
+    applyTransform();
+  } else if (e.touches.length === 2) {
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const delta = (dist - lastTouchDist) * 0.005;
+    lastTouchDist = dist;
+    const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const rect = container.getBoundingClientRect();
+    zoomAt(cx - rect.left, cy - rect.top, delta);
+  }
+}, { passive: true });
+container.addEventListener('touchend', () => { isPanning = false; });
+
+// ═══ Scroll zoom ═══
+container.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const rect = container.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const delta = e.deltaY > 0 ? -0.08 : 0.08;
+  zoomAt(cx, cy, delta);
+}, { passive: false });
+
+// ═══ Hide pan hint after first interaction ═══
+let hintHidden = false;
+function hideHint() {
+  if (hintHidden) return;
+  hintHidden = true;
+  panHint.classList.add('hidden');
+  setTimeout(() => { panHint.style.display = 'none'; }, 700);
+}
+container.addEventListener('mousedown', hideHint);
+container.addEventListener('wheel', hideHint);
+container.addEventListener('touchstart', hideHint);
+
+// ═══ View switching ═══
+window.switchView = async function(view) {
+  if (view === currentView) return;
+  currentView = view;
+
+  // Toggle buttons
+  document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+
+  // Toggle panels
+  document.querySelectorAll('.diagram-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + view);
+  if (panel) panel.classList.add('active');
+
+  // Toggle legends
+  ['master','tier1','tier2','tier3'].forEach(v => {
+    const leg = document.getElementById('legend-' + v);
+    if (leg) leg.style.display = (v === view) ? 'flex' : 'none';
+  });
+
+  // Render if needed
+  await renderDiagram('diagram-' + view);
+
+  // Reset view for new diagram
+  scale = 1; panX = 0; panY = 0;
+  applyTransform();
+
+  // Auto-fit after a brief paint delay
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { window.fitToScreen(); });
+  });
+};
+
+// ═══ Initial render ═══
+await renderDiagram('diagram-master');
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => { window.fitToScreen(); });
+});
+</script>
+</body>
+</html>
