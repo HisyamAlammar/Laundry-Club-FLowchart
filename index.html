@@ -1014,7 +1014,7 @@ mermaid.initialize({
     curve: 'basis',
     nodeSpacing: 30,
     rankSpacing: 45,
-    htmlLabels: true,
+    htmlLabels: false,
     wrap: true,
     useMaxWidth: false,
   },
@@ -1213,120 +1213,134 @@ window.exportPNG = async function() {
     return;
   }
 
-  // Tampilkan loading spinner pada tombol
+  // Show loading state on button
   const btn = document.querySelector('.export-btn');
   const originalText = btn.innerHTML;
   btn.innerHTML = `
-    <svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:0.25;"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style="opacity:0.75;"></path></svg>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 019.95 9" stroke-opacity="0.75"></path></svg>
     Mengekspor...
   `;
-
   if (!document.getElementById('spin-style')) {
     const s = document.createElement('style');
     s.id = 'spin-style';
-    s.textContent = '@keyframes spin { 100% { transform: rotate(360deg); } }';
+    s.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
     document.head.appendChild(s);
   }
 
+  // Let UI update before heavy work
+  await new Promise(r => setTimeout(r, 50));
+
   try {
-    // Clone SVG element
+    // Clone SVG
     const svgClone = svgEl.cloneNode(true);
 
-    // Get original width & height from viewBox
-    const viewBox = svgEl.getAttribute('viewBox');
-    let width = 800;
-    let height = 600;
-    if (viewBox) {
-      const parts = viewBox.split(' ');
-      if (parts.length === 4) {
-        width = parseFloat(parts[2]);
-        height = parseFloat(parts[3]);
+    // Safety: remove any remaining foreignObject elements (they block canvas rendering)
+    svgClone.querySelectorAll('foreignObject').forEach(fo => {
+      const textContent = fo.textContent.trim();
+      if (textContent) {
+        const parent = fo.parentNode;
+        const svgText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        svgText.setAttribute('x', fo.getAttribute('x') || '0');
+        svgText.setAttribute('y', fo.getAttribute('y') || '14');
+        svgText.setAttribute('font-size', '14');
+        svgText.setAttribute('fill', '#1e3a5f');
+        svgText.setAttribute('font-family', "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif");
+        svgText.textContent = textContent;
+        parent.insertBefore(svgText, fo);
       }
+      fo.remove();
+    });
+
+    // Get dimensions from viewBox or bounding rect
+    const vb = svgEl.getAttribute('viewBox');
+    let width, height;
+    if (vb) {
+      const parts = vb.split(/[\s,]+/);
+      width = parseFloat(parts[2]) || 800;
+      height = parseFloat(parts[3]) || 600;
     } else {
-      const rect = svgEl.getBoundingClientRect();
-      width = rect.width;
-      height = rect.height;
+      const bbox = svgEl.getBoundingClientRect();
+      width = bbox.width / scale;
+      height = bbox.height / scale;
     }
 
-    // Scale up for high resolution PNG (3x)
-    const scaleMultiplier = 3;
-    const exportWidth = width * scaleMultiplier;
-    const exportHeight = height * scaleMultiplier;
+    // 3x scale for crisp high-res PNG
+    const SCALE = 3;
+    const exportW = Math.round(width * SCALE);
+    const exportH = Math.round(height * SCALE);
 
-    // Set correct dimensions on cloned SVG
-    svgClone.setAttribute('width', exportWidth);
-    svgClone.setAttribute('height', exportHeight);
+    // Set explicit dimensions and namespace on clone
+    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    svgClone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    svgClone.setAttribute('width', exportW);
+    svgClone.setAttribute('height', exportH);
+    if (!svgClone.getAttribute('viewBox')) {
+      svgClone.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+    }
 
-    // Embed styling inside SVG using system fonts to ensure instant rendering and bypass sandbox restrictions
-    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-    styleEl.textContent = `
-      svg {
-        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-      }
-      .node text, .node .label, .node span, .node div {
-        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-      }
-    `;
-    svgClone.insertBefore(styleEl, svgClone.firstChild);
+    // Inject font style
+    const styleTag = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleTag.textContent = '* { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }';
+    svgClone.insertBefore(styleTag, svgClone.firstChild);
 
-    // Serialize SVG to XML string
-    const svgString = new XMLSerializer().serializeToString(svgClone);
-    
-    // Create image blob
-    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const URL = window.URL || window.webkitURL || window;
-    const blobURL = URL.createObjectURL(svgBlob);
+    // Serialize to XML string
+    const serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(svgClone);
 
-    const image = new Image();
-    image.onload = () => {
-      // Create canvas
-      const canvas = document.createElement('canvas');
-      canvas.width = exportWidth;
-      canvas.height = exportHeight;
-      const ctx = canvas.getContext('2d');
+    // Use data: URL (more reliable than blob: for Image constructor)
+    const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
 
-      // Draw white background
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Create image and draw to canvas via Promise
+    const img = new Image();
 
-      // Draw image
-      ctx.drawImage(image, 0, 0, exportWidth, exportHeight);
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Image load timeout (10s)'));
+      }, 10000);
 
-      // Trigger download
-      const pngURL = canvas.toDataURL('image/png');
-      const downloadLink = document.createElement('a');
-      
-      const viewNames = {
-        'master': 'Master-Flowchart',
-        'tier1': 'Tier-1-FAQ-Flowchart',
-        'tier2': 'Tier-2-Interactive-Flowchart',
-        'tier3': 'Tier-3-Full-Flowchart'
-      };
-      const name = viewNames[currentView] || 'Flowchart';
-      downloadLink.download = `${name}.png`;
-      downloadLink.href = pngURL;
-      
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
+      img.onload = () => { clearTimeout(timeout); resolve(); };
+      img.onerror = (e) => { clearTimeout(timeout); reject(new Error('Image load failed')); };
+      img.src = dataUrl;
+    });
 
-      // Clean up URL object
-      URL.revokeObjectURL(blobURL);
-      
-      // Reset button text
-      btn.innerHTML = originalText;
+    // Draw to canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = exportW;
+    canvas.height = exportH;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, exportW, exportH);
+    ctx.drawImage(img, 0, 0, exportW, exportH);
+
+    // Download as PNG
+    const viewNames = {
+      'master': 'Master-Flowchart',
+      'tier1': 'Tier-1-FAQ-Flowchart',
+      'tier2': 'Tier-2-Interactive-Flowchart',
+      'tier3': 'Tier-3-Full-Flowchart'
     };
+    const filename = (viewNames[currentView] || 'Flowchart') + '.png';
 
-    image.onerror = (err) => {
-      console.error('Render error:', err);
-      alert('Gagal mengekspor gambar. Pastikan browser Anda mendukung ekspor Canvas.');
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        alert('Gagal mengekspor gambar (canvas kosong).');
+        btn.innerHTML = originalText;
+        return;
+      }
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
       btn.innerHTML = originalText;
-    };
+    }, 'image/png');
 
-    image.src = blobURL;
   } catch (error) {
-    console.error('Export error:', error);
-    alert('Terjadi kesalahan saat ekspor.');
+    console.error('Export PNG error:', error);
+    alert('Gagal mengekspor: ' + error.message);
     btn.innerHTML = originalText;
   }
 };
