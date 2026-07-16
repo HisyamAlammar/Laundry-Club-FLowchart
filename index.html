@@ -1014,7 +1014,7 @@ mermaid.initialize({
     curve: 'basis',
     nodeSpacing: 30,
     rankSpacing: 45,
-    htmlLabels: false,
+    htmlLabels: true,
     wrap: true,
     useMaxWidth: false,
   },
@@ -1035,12 +1035,19 @@ const inner = document.getElementById('canvasInner');
 const zoomLabel = document.getElementById('zoomLabel');
 const panHint = document.getElementById('panHint');
 
+// ═══ Store original mermaid sources (needed for export re-render) ═══
+const mermaidSources = {};
+
 // ═══ Render a mermaid diagram ═══
 async function renderDiagram(id) {
   if (rendered.has(id)) return;
   const el = document.getElementById(id);
   if (!el) return;
   try {
+    // Store original mermaid source text before it gets replaced by SVG
+    if (!mermaidSources[id]) {
+      mermaidSources[id] = el.textContent;
+    }
     const { svg } = await mermaid.render(id + '-svg', el.textContent);
     el.innerHTML = svg;
     rendered.add(id);
@@ -1205,10 +1212,9 @@ window.switchView = async function(view) {
 
 // ═══ Export to PNG ═══
 window.exportPNG = async function() {
-  const activePanel = document.querySelector('.diagram-panel.active');
-  if (!activePanel) return;
-  const svgEl = activePanel.querySelector('svg');
-  if (!svgEl) {
+  const diagramId = 'diagram-' + currentView;
+  const source = mermaidSources[diagramId];
+  if (!source) {
     alert('Diagram belum siap diekspor. Silakan tunggu beberapa saat.');
     return;
   }
@@ -1227,31 +1233,70 @@ window.exportPNG = async function() {
     document.head.appendChild(s);
   }
 
-  // Let UI update before heavy work
+  // Let UI update
   await new Promise(r => setTimeout(r, 50));
 
   try {
-    // Clone SVG
-    const svgClone = svgEl.cloneNode(true);
-
-    // Safety: remove any remaining foreignObject elements (they block canvas rendering)
-    svgClone.querySelectorAll('foreignObject').forEach(fo => {
-      const textContent = fo.textContent.trim();
-      if (textContent) {
-        const parent = fo.parentNode;
-        const svgText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        svgText.setAttribute('x', fo.getAttribute('x') || '0');
-        svgText.setAttribute('y', fo.getAttribute('y') || '14');
-        svgText.setAttribute('font-size', '14');
-        svgText.setAttribute('fill', '#1e3a5f');
-        svgText.setAttribute('font-family', "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif");
-        svgText.textContent = textContent;
-        parent.insertBefore(svgText, fo);
-      }
-      fo.remove();
+    // Re-initialize mermaid with htmlLabels:false for clean SVG export
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+        fontSize: '13px',
+        primaryColor: '#dbeafe',
+        primaryBorderColor: '#93c5fd',
+        primaryTextColor: '#1e3a5f',
+        lineColor: '#6b7f9e',
+        edgeLabelBackground: '#ffffff',
+      },
+      flowchart: {
+        curve: 'basis',
+        nodeSpacing: 40,
+        rankSpacing: 55,
+        htmlLabels: false,
+        wrap: true,
+        useMaxWidth: false,
+      },
     });
 
-    // Get dimensions from viewBox or bounding rect
+    // Render into a temp hidden container using unique ID
+    const exportId = 'export-' + Date.now();
+    const { svg: exportSvg } = await mermaid.render(exportId, source);
+
+    // Restore mermaid config back to htmlLabels:true for display
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif",
+        fontSize: '14px',
+        primaryColor: '#dbeafe',
+        primaryBorderColor: '#93c5fd',
+        primaryTextColor: '#1e3a5f',
+        lineColor: '#6b7f9e',
+        edgeLabelBackground: '#ffffff',
+      },
+      flowchart: {
+        curve: 'basis',
+        nodeSpacing: 30,
+        rankSpacing: 45,
+        htmlLabels: true,
+        wrap: true,
+        useMaxWidth: false,
+      },
+    });
+
+    // Parse the exported SVG to get dimensions
+    const tempDiv = document.createElement('div');
+    tempDiv.style.cssText = 'position:fixed;left:-99999px;top:0;visibility:hidden;';
+    tempDiv.innerHTML = exportSvg;
+    document.body.appendChild(tempDiv);
+
+    const svgEl = tempDiv.querySelector('svg');
+    if (!svgEl) throw new Error('SVG not found in export render');
+
+    // Get dimensions
     const vb = svgEl.getAttribute('viewBox');
     let width, height;
     if (vb) {
@@ -1259,47 +1304,45 @@ window.exportPNG = async function() {
       width = parseFloat(parts[2]) || 800;
       height = parseFloat(parts[3]) || 600;
     } else {
-      const bbox = svgEl.getBoundingClientRect();
-      width = bbox.width / scale;
-      height = bbox.height / scale;
+      width = svgEl.getBoundingClientRect().width || 800;
+      height = svgEl.getBoundingClientRect().height || 600;
     }
 
-    // 3x scale for crisp high-res PNG
+    // Clean up temp DOM
+    document.body.removeChild(tempDiv);
+
+    // Prepare SVG for image loading
     const SCALE = 3;
     const exportW = Math.round(width * SCALE);
     const exportH = Math.round(height * SCALE);
 
-    // Set explicit dimensions and namespace on clone
-    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    svgClone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-    svgClone.setAttribute('width', exportW);
-    svgClone.setAttribute('height', exportH);
-    if (!svgClone.getAttribute('viewBox')) {
-      svgClone.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+    // Create a clean SVG string with explicit namespace and dimensions
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(exportSvg, 'image/svg+xml');
+    const svgRoot = svgDoc.documentElement;
+    svgRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    svgRoot.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    svgRoot.setAttribute('width', exportW);
+    svgRoot.setAttribute('height', exportH);
+    if (!svgRoot.getAttribute('viewBox')) {
+      svgRoot.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
     }
 
     // Inject font style
-    const styleTag = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    const styleTag = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'style');
     styleTag.textContent = '* { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important; }';
-    svgClone.insertBefore(styleTag, svgClone.firstChild);
+    svgRoot.insertBefore(styleTag, svgRoot.firstChild);
 
-    // Serialize to XML string
-    const serializer = new XMLSerializer();
-    let svgString = serializer.serializeToString(svgClone);
-
-    // Use data: URL (more reliable than blob: for Image constructor)
+    // Serialize
+    const svgString = new XMLSerializer().serializeToString(svgRoot);
     const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
 
-    // Create image and draw to canvas via Promise
+    // Load into image
     const img = new Image();
-
     await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Image load timeout (10s)'));
-      }, 10000);
-
+      const timeout = setTimeout(() => reject(new Error('Image load timeout (15s)')), 15000);
       img.onload = () => { clearTimeout(timeout); resolve(); };
-      img.onerror = (e) => { clearTimeout(timeout); reject(new Error('Image load failed')); };
+      img.onerror = () => { clearTimeout(timeout); reject(new Error('Image load failed')); };
       img.src = dataUrl;
     });
 
@@ -1312,7 +1355,7 @@ window.exportPNG = async function() {
     ctx.fillRect(0, 0, exportW, exportH);
     ctx.drawImage(img, 0, 0, exportW, exportH);
 
-    // Download as PNG
+    // Download
     const viewNames = {
       'master': 'Master-Flowchart',
       'tier1': 'Tier-1-FAQ-Flowchart',
@@ -1323,7 +1366,7 @@ window.exportPNG = async function() {
 
     canvas.toBlob((blob) => {
       if (!blob) {
-        alert('Gagal mengekspor gambar (canvas kosong).');
+        alert('Gagal mengekspor gambar.');
         btn.innerHTML = originalText;
         return;
       }
@@ -1342,6 +1385,29 @@ window.exportPNG = async function() {
     console.error('Export PNG error:', error);
     alert('Gagal mengekspor: ' + error.message);
     btn.innerHTML = originalText;
+
+    // Make sure mermaid config is restored even on error
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      themeVariables: {
+        fontFamily: "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif",
+        fontSize: '14px',
+        primaryColor: '#dbeafe',
+        primaryBorderColor: '#93c5fd',
+        primaryTextColor: '#1e3a5f',
+        lineColor: '#6b7f9e',
+        edgeLabelBackground: '#ffffff',
+      },
+      flowchart: {
+        curve: 'basis',
+        nodeSpacing: 30,
+        rankSpacing: 45,
+        htmlLabels: true,
+        wrap: true,
+        useMaxWidth: false,
+      },
+    });
   }
 };
 
