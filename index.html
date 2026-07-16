@@ -1257,15 +1257,14 @@ window.exportPNG = async function() {
     svgClone.setAttribute('width', exportWidth);
     svgClone.setAttribute('height', exportHeight);
 
-    // Embed styling inside SVG
+    // Embed styling inside SVG using system fonts to ensure instant rendering and bypass sandbox restrictions
     const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
     styleEl.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
       svg {
-        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
       }
       .node text, .node .label, .node span, .node div {
-        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
       }
     `;
     svgClone.insertBefore(styleEl, svgClone.firstChild);
@@ -1319,57 +1318,9 @@ window.exportPNG = async function() {
     };
 
     image.onerror = (err) => {
-      console.warn('Google Fonts import failed inside blob image sandbox, retrying with system-ui...', err);
-      // Fallback if import blocks rendering (some browsers block external fonts inside blob image constructor)
-      try {
-        styleEl.textContent = `
-          svg {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-          }
-          .node text, .node .label, .node span, .node div {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
-          }
-        `;
-        const fallbackString = new XMLSerializer().serializeToString(svgClone);
-        const fallbackBlob = new Blob([fallbackString], { type: 'image/svg+xml;charset=utf-8' });
-        const fallbackURL = URL.createObjectURL(fallbackBlob);
-        
-        const fallbackImg = new Image();
-        fallbackImg.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = exportWidth;
-          canvas.height = exportHeight;
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(fallbackImg, 0, 0, exportWidth, exportHeight);
-
-          const pngURL = canvas.toDataURL('image/png');
-          const downloadLink = document.createElement('a');
-          const viewNames = {
-            'master': 'Master-Flowchart',
-            'tier1': 'Tier-1-FAQ-Flowchart',
-            'tier2': 'Tier-2-Interactive-Flowchart',
-            'tier3': 'Tier-3-Full-Flowchart'
-          };
-          downloadLink.download = `${viewNames[currentView] || 'Flowchart'}.png`;
-          downloadLink.href = pngURL;
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          document.body.removeChild(downloadLink);
-
-          URL.revokeObjectURL(fallbackURL);
-          btn.innerHTML = originalText;
-        };
-        fallbackImg.onerror = () => {
-          alert('Gagal mengekspor gambar.');
-          btn.innerHTML = originalText;
-        };
-        fallbackImg.src = fallbackURL;
-      } catch (fallbackErr) {
-        alert('Gagal mengekspor gambar.');
-        btn.innerHTML = originalText;
-      }
+      console.error('Render error:', err);
+      alert('Gagal mengekspor gambar. Pastikan browser Anda mendukung ekspor Canvas.');
+      btn.innerHTML = originalText;
     };
 
     image.src = blobURL;
