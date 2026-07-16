@@ -200,6 +200,44 @@ body {
 .diagram-panel { display: none; }
 .diagram-panel.active { display: block; }
 
+/* ─── EXPORT BUTTON ─── */
+.export-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg-deep); color: var(--text-secondary);
+  font-family: inherit; font-size: 11.5px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s ease;
+  height: 36px;
+  user-select: none;
+}
+.export-btn:hover {
+  background: rgba(255,255,255,0.06); color: #fff;
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 10px var(--accent-orange-glow);
+}
+.export-btn:active {
+  transform: scale(0.96);
+}
+.export-btn svg {
+  transition: transform 0.2s ease;
+}
+.export-btn:hover svg {
+  transform: translateY(1px);
+}
+
+/* Fix Mermaid text cut-off & styling */
+.mermaid foreignObject {
+  overflow: visible !important;
+}
+.mermaid foreignObject > div {
+  overflow: visible !important;
+  font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  color: inherit !important;
+  text-align: center;
+}
+
 /* ─── MINIMAP HINT ─── */
 .pan-hint {
   position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
@@ -271,6 +309,10 @@ footer .brand { color: var(--accent-orange); font-weight: 600; }
     </button>
   </div>
   <div class="right-controls">
+    <button class="export-btn" onclick="exportPNG()" title="Ekspor ke Gambar PNG">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Ekspor PNG
+    </button>
     <div class="zoom-controls">
       <button class="zoom-btn" onclick="zoomDelta(-0.15)" title="Zoom Out">−</button>
       <span class="zoom-label" id="zoomLabel">100%</span>
@@ -1161,11 +1203,196 @@ window.switchView = async function(view) {
   });
 };
 
+// ═══ Export to PNG ═══
+window.exportPNG = async function() {
+  const activePanel = document.querySelector('.diagram-panel.active');
+  if (!activePanel) return;
+  const svgEl = activePanel.querySelector('svg');
+  if (!svgEl) {
+    alert('Diagram belum siap diekspor. Silakan tunggu beberapa saat.');
+    return;
+  }
+
+  // Tampilkan loading spinner pada tombol
+  const btn = document.querySelector('.export-btn');
+  const originalText = btn.innerHTML;
+  btn.innerHTML = `
+    <svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:0.25;"></circle><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style="opacity:0.75;"></path></svg>
+    Mengekspor...
+  `;
+
+  if (!document.getElementById('spin-style')) {
+    const s = document.createElement('style');
+    s.id = 'spin-style';
+    s.textContent = '@keyframes spin { 100% { transform: rotate(360deg); } }';
+    document.head.appendChild(s);
+  }
+
+  try {
+    // Clone SVG element
+    const svgClone = svgEl.cloneNode(true);
+
+    // Get original width & height from viewBox
+    const viewBox = svgEl.getAttribute('viewBox');
+    let width = 800;
+    let height = 600;
+    if (viewBox) {
+      const parts = viewBox.split(' ');
+      if (parts.length === 4) {
+        width = parseFloat(parts[2]);
+        height = parseFloat(parts[3]);
+      }
+    } else {
+      const rect = svgEl.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+    }
+
+    // Scale up for high resolution PNG (3x)
+    const scaleMultiplier = 3;
+    const exportWidth = width * scaleMultiplier;
+    const exportHeight = height * scaleMultiplier;
+
+    // Set correct dimensions on cloned SVG
+    svgClone.setAttribute('width', exportWidth);
+    svgClone.setAttribute('height', exportHeight);
+
+    // Embed styling inside SVG
+    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleEl.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+      svg {
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+      }
+      .node text, .node .label, .node span, .node div {
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+      }
+    `;
+    svgClone.insertBefore(styleEl, svgClone.firstChild);
+
+    // Serialize SVG to XML string
+    const svgString = new XMLSerializer().serializeToString(svgClone);
+    
+    // Create image blob
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const URL = window.URL || window.webkitURL || window;
+    const blobURL = URL.createObjectURL(svgBlob);
+
+    const image = new Image();
+    image.onload = () => {
+      // Create canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = exportWidth;
+      canvas.height = exportHeight;
+      const ctx = canvas.getContext('2d');
+
+      // Draw white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw image
+      ctx.drawImage(image, 0, 0, exportWidth, exportHeight);
+
+      // Trigger download
+      const pngURL = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      
+      const viewNames = {
+        'master': 'Master-Flowchart',
+        'tier1': 'Tier-1-FAQ-Flowchart',
+        'tier2': 'Tier-2-Interactive-Flowchart',
+        'tier3': 'Tier-3-Full-Flowchart'
+      };
+      const name = viewNames[currentView] || 'Flowchart';
+      downloadLink.download = `${name}.png`;
+      downloadLink.href = pngURL;
+      
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+
+      // Clean up URL object
+      URL.revokeObjectURL(blobURL);
+      
+      // Reset button text
+      btn.innerHTML = originalText;
+    };
+
+    image.onerror = (err) => {
+      console.warn('Google Fonts import failed inside blob image sandbox, retrying with system-ui...', err);
+      // Fallback if import blocks rendering (some browsers block external fonts inside blob image constructor)
+      try {
+        styleEl.textContent = `
+          svg {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+          }
+          .node text, .node .label, .node span, .node div {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+          }
+        `;
+        const fallbackString = new XMLSerializer().serializeToString(svgClone);
+        const fallbackBlob = new Blob([fallbackString], { type: 'image/svg+xml;charset=utf-8' });
+        const fallbackURL = URL.createObjectURL(fallbackBlob);
+        
+        const fallbackImg = new Image();
+        fallbackImg.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = exportWidth;
+          canvas.height = exportHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(fallbackImg, 0, 0, exportWidth, exportHeight);
+
+          const pngURL = canvas.toDataURL('image/png');
+          const downloadLink = document.createElement('a');
+          const viewNames = {
+            'master': 'Master-Flowchart',
+            'tier1': 'Tier-1-FAQ-Flowchart',
+            'tier2': 'Tier-2-Interactive-Flowchart',
+            'tier3': 'Tier-3-Full-Flowchart'
+          };
+          downloadLink.download = `${viewNames[currentView] || 'Flowchart'}.png`;
+          downloadLink.href = pngURL;
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+
+          URL.revokeObjectURL(fallbackURL);
+          btn.innerHTML = originalText;
+        };
+        fallbackImg.onerror = () => {
+          alert('Gagal mengekspor gambar.');
+          btn.innerHTML = originalText;
+        };
+        fallbackImg.src = fallbackURL;
+      } catch (fallbackErr) {
+        alert('Gagal mengekspor gambar.');
+        btn.innerHTML = originalText;
+      }
+    };
+
+    image.src = blobURL;
+  } catch (error) {
+    console.error('Export error:', error);
+    alert('Terjadi kesalahan saat ekspor.');
+    btn.innerHTML = originalText;
+  }
+};
+
 // ═══ Initial render ═══
-await renderDiagram('diagram-master');
-requestAnimationFrame(() => {
-  requestAnimationFrame(() => { window.fitToScreen(); });
-});
+const initRender = async () => {
+  await renderDiagram('diagram-master');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { window.fitToScreen(); });
+  });
+};
+
+if (document.fonts) {
+  document.fonts.ready.then(initRender);
+} else {
+  initRender();
+}
 </script>
 </body>
 </html>
